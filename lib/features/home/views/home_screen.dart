@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
+import 'call_simulation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -155,7 +156,8 @@ class _DiscoverPeopleTab extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 26,
-                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Chillax',
+                        fontWeight: FontWeight.w700,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -371,10 +373,11 @@ class _AgentCard extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Starting voice call with $name...'),
-                          backgroundColor: AppColors.primary,
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CallSimulationScreen(
+                            callType: CallType.audio,
+                          ),
                         ),
                       );
                     },
@@ -399,10 +402,11 @@ class _AgentCard extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Starting video call with $name...'),
-                          backgroundColor: AppColors.primary,
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CallSimulationScreen(
+                            callType: CallType.video,
+                          ),
                         ),
                       );
                     },

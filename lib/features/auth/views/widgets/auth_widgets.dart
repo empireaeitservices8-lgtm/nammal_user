@@ -37,7 +37,8 @@ class NammalHeader extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(
                 color: AppColors.primary,
                 fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontFamily: 'Chillax',
+                fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
               ),
             ),

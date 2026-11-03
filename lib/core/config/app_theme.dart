@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'app_colors.dart';
 
 class AppTheme {
+  static const String fontChillax = 'Chillax';
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
