@@ -34,6 +34,24 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.4.3
+  riverpod_annotation: ^4.0.7
+  go_router: ^18.1.2
+  dio: ^5.11.1
+  pretty_dio_logger: ^1.4.0
+  agora_rtc_engine: ^6.6.4
+  permission_handler: ^13.0.2
+  flutter_secure_storage: ^11.2.0
+  shared_preferences: ^2.5.6
+  pinput: ^7.0.0
+  cached_network_image: ^4.0.3
+  intl: ^0.20.2
+  flutter_svg: ^2.3.2
+  shimmer: ^4.0.0
+  agora_token_generator: ^1.0.0
+  firebase_core: ^5.1.0
+  firebase_messaging: ^17.0.1
+  flutter_local_notifications: ^22.3.3
 
 dev_dependencies:
   flutter_test:
