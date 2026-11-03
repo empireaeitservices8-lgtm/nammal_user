@@ -181,7 +181,7 @@ class TermsFooter extends StatelessWidget {
                 decoration: TextDecoration.underline,
               ),
             ),
-            TextSpan(text: ' &\n'),
+            TextSpan(text: ' & '),
             TextSpan(
               text: 'Privacy Policy',
               style: TextStyle(

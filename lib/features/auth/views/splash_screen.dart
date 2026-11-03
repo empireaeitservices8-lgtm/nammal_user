@@ -12,9 +12,7 @@ class SplashScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.screenGradient),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -22,19 +20,11 @@ class SplashScreen extends StatelessWidget {
               children: [
                 const Spacer(flex: 3),
 
-                // Center Logo & Tagline
+                // Center Logo
+                Image.asset("assets/images/logo_transparent.png"),
+
                 const Text(
-                  'nammal',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Connecting you with verified agents instantly',
+                  'Where Meaningful Connections Bloom',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textSecondary,
