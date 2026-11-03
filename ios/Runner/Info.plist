@@ -27,7 +27,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
+	<key>NSCameraUsageDescription</key>
+<string>Camera access is needed to make video calls.</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Microphone access is needed to make audio and video calls.</string>
 	<dict>
+
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 		<key>UISceneConfigurations</key>
