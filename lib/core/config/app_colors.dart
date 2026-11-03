@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Brand & Primary
-  static const Color primary = Color(0xFF5B3DE8);
+  static const Color primary = Color(0xFF5F3ADD);
   static const Color primaryDark = Color(0xFF4526D1);
   static const Color primaryLight = Color(0xFF7B61FF);
 
@@ -14,11 +14,7 @@ class AppColors {
   static const LinearGradient screenGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      backgroundTop,
-      backgroundMiddle,
-      backgroundBottom,
-    ],
+    colors: [backgroundTop, backgroundMiddle, backgroundBottom],
     stops: [0.0, 0.4, 1.0],
   );
 
