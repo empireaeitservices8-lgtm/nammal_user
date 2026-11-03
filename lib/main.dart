@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_theme.dart';
-import 'features/auth/views/splash_screen.dart';
+import 'core/routing/app_router.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NammalUserApp());
+  runApp(const ProviderScope(child: NammalUserApp()));
 }
 
 class NammalUserApp extends StatelessWidget {
@@ -12,11 +13,11 @@ class NammalUserApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'nammal',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+      routerConfig: appRouter,
     );
   }
 }
