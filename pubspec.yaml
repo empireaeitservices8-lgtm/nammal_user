@@ -39,7 +39,7 @@ dependencies:
   go_router: ^18.1.2
   dio: ^5.11.1
   pretty_dio_logger: ^1.4.0
-  #agora_rtc_engine: ^6.6.4
+  agora_rtc_engine: ^6.6.4
   permission_handler: ^13.0.2
   flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.6
