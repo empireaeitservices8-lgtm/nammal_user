@@ -7,7 +7,7 @@ class ApiEndpoints {
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   // --- Auth Endpoints ---
-  static const String register = 'api/user/register/';
+  static const String register = '/api/user/register/';
   static const String sendOtp = '/api/user/send-otp/';
   static const String verifyOtp = '/api/user/verify-otp/';
   static const String login = '/api/user/login/';

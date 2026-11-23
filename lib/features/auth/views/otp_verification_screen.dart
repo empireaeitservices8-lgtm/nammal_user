@@ -1,21 +1,32 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
+import '../../home/views/home_screen.dart';
+import '../controllers/auth_controller.dart';
 import 'widgets/auth_widgets.dart';
 import 'user_onboarding_screen.dart';
 
-class OtpVerificationScreen extends StatefulWidget {
+class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
+  final String? displayPhone;
+  final int resendAfterSeconds;
 
-  const OtpVerificationScreen({super.key, this.phoneNumber = '+91 9876543210'});
+  const OtpVerificationScreen({
+    super.key,
+    required this.phoneNumber,
+    this.displayPhone,
+    this.resendAfterSeconds = 45,
+  });
 
   @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   String _enteredOtp = '';
-  int _secondsRemaining = 45;
+  late int _secondsRemaining;
   Timer? _timer;
   bool _isVerifying = false;
   bool _hasError = false;
@@ -24,11 +35,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   void initState() {
     super.initState();
+    _secondsRemaining = widget.resendAfterSeconds;
     _startTimer();
   }
 
   void _startTimer() {
-    _secondsRemaining = 45;
+    _secondsRemaining = widget.resendAfterSeconds;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
@@ -84,7 +96,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
-  void _resendCode() {
+  Future<void> _resendCode() async {
     if (_secondsRemaining > 0) return;
 
     setState(() {
@@ -94,18 +106,37 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
     _startTimer();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'A new 4-digit code has been sent to ${widget.phoneNumber}',
+    final response = await ref
+        .read(authControllerProvider.notifier)
+        .sendOtp(widget.phoneNumber);
+
+    if (!mounted) return;
+
+    if (response != null && response.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'A new 4-digit code has been sent to ${widget.phoneNumber}',
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: const Color(0xFF10B981),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    } else {
+      final err =
+          ref.read(authControllerProvider).error ??
+          'Failed to resend code. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
-  void _onVerify() async {
+  Future<void> _onVerify() async {
     if (_isVerifying) return;
 
     // Validation: check complete 4 digits
@@ -131,8 +162,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _errorMessage = null;
     });
 
-    // Simulated short verification latency
-    await Future.delayed(const Duration(milliseconds: 350));
+    final response = await ref
+        .read(authControllerProvider.notifier)
+        .verifyOtp(_enteredOtp);
 
     if (!mounted) return;
 
@@ -140,10 +172,38 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _isVerifying = false;
     });
 
-    // Navigate to Onboarding screen
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const UserOnboardingScreen()));
+    if (response != null && response.isSuccess) {
+      if (response.shouldGoToHome) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => UserOnboardingScreen(
+              phoneNumber: widget.phoneNumber,
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    } else {
+      final err =
+          ref.read(authControllerProvider).error ??
+          'Invalid verification code. Please try again.';
+      setState(() {
+        _hasError = true;
+        _errorMessage = err;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -181,7 +241,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       Row(
                         children: [
                           Text(
-                            'Sent to ${widget.phoneNumber}',
+                            'Sent to ${widget.displayPhone ?? widget.phoneNumber}',
                             style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 14,

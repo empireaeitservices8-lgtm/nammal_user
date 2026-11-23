@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
+import '../controllers/auth_controller.dart';
 import 'widgets/auth_widgets.dart';
 import 'otp_verification_screen.dart';
 
-class PhoneLoginScreen extends StatefulWidget {
+class PhoneLoginScreen extends ConsumerStatefulWidget {
   const PhoneLoginScreen({super.key});
 
   @override
-  State<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
+  ConsumerState<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
 }
 
-class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
+class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final String _selectedCountryCode = '+91';
 
@@ -21,7 +23,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     super.dispose();
   }
 
-  void _onContinue() {
+  Future<void> _onContinue() async {
     final phoneNumber = _phoneController.text.trim();
     if (phoneNumber.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -34,25 +36,47 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          phoneNumber: '$_selectedCountryCode $phoneNumber',
+    FocusScope.of(context).unfocus();
+    final otpResponse = await ref
+        .read(authControllerProvider.notifier)
+        .sendOtp(phoneNumber);
+
+    if (!mounted) return;
+
+    if (otpResponse != null && otpResponse.isSuccess) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            phoneNumber: phoneNumber,
+            displayPhone: '$_selectedCountryCode $phoneNumber',
+            resendAfterSeconds: otpResponse.resendAfter,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      final error =
+          ref.read(authControllerProvider).error ??
+          'Failed to send verification code. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+
     return Scaffold(
-      appBar: const NammalHeader(),
+      appBar: const NammalHeader(showBack: false),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.screenGradient),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -150,7 +174,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: '00000 00000',
+                            hintText: '9846123456',
                             hintStyle: TextStyle(
                               color: AppColors.textPlaceholder,
                               fontSize: 17,
@@ -168,8 +192,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
                 // Submit Button
                 PrimaryButton(
-                  text: 'Send Verification Code',
-                  onPressed: _onContinue,
+                  text: authState.isLoading
+                      ? 'Sending code...'
+                      : 'Send Verification Code',
+                  onPressed: authState.isLoading ? null : _onContinue,
                 ),
                 const SizedBox(height: 18),
 
@@ -178,7 +204,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.shield,
+                      Icons.shield_outlined,
                       color: AppColors.primary,
                       size: 18,
                     ),
@@ -194,7 +220,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 18),
-
                 // Legal Disclaimer
                 const TermsFooter(),
                 const SizedBox(height: 8),

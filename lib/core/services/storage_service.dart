@@ -15,6 +15,9 @@ class StorageService {
   static const String _keyRefreshToken = 'refresh_token';
   static const String _keyUserId = 'user_id';
   static const String _keyIsLoggedIn = 'is_logged_in';
+  static const String _keyPhone = 'phone_number';
+  static const String _keyUserName = 'user_name';
+  static const String _keyIsNewUser = 'is_new_user';
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -45,6 +48,30 @@ class StorageService {
 
   String? getUserId() {
     return _prefs?.getString(_keyUserId);
+  }
+
+  Future<void> savePhone(String phone) async {
+    await _prefs?.setString(_keyPhone, phone);
+  }
+
+  String? getPhone() {
+    return _prefs?.getString(_keyPhone);
+  }
+
+  Future<void> saveUserName(String name) async {
+    await _prefs?.setString(_keyUserName, name);
+  }
+
+  String? getUserName() {
+    return _prefs?.getString(_keyUserName);
+  }
+
+  Future<void> setIsNewUser(bool isNew) async {
+    await _prefs?.setBool(_keyIsNewUser, isNew);
+  }
+
+  bool isNewUser() {
+    return _prefs?.getBool(_keyIsNewUser) ?? false;
   }
 
   bool isLoggedIn() {

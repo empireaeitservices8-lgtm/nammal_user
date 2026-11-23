@@ -3,10 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_theme.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: NammalUserApp()));
+  final storageService = StorageService();
+  await storageService.init();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        storageServiceProvider.overrideWithValue(storageService),
+      ],
+      child: const NammalUserApp(),
+    ),
+  );
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 }
 

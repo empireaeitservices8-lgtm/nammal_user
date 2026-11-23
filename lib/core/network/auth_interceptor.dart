@@ -15,7 +15,14 @@ class AuthInterceptor extends Interceptor {
     final token = await _storageService.getToken();
 
     if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+      if (token.startsWith('Bearer ') || token.startsWith('Token ')) {
+        options.headers['Authorization'] = token;
+      } else if (token.length == 40 && !token.contains('.')) {
+        // Django REST Framework default Token authentication
+        options.headers['Authorization'] = 'Token $token';
+      } else {
+        options.headers['Authorization'] = 'Token $token';
+      }
     }
 
     options.headers['Accept'] = 'application/json';

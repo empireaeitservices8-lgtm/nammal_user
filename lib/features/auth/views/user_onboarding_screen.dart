@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
 import '../../home/views/home_screen.dart';
+import '../controllers/auth_controller.dart';
 import 'widgets/auth_widgets.dart';
 
-class UserOnboardingScreen extends StatefulWidget {
-  const UserOnboardingScreen({super.key});
+class UserOnboardingScreen extends ConsumerStatefulWidget {
+  final String? phoneNumber;
+
+  const UserOnboardingScreen({super.key, this.phoneNumber});
 
   @override
-  State<UserOnboardingScreen> createState() => _UserOnboardingScreenState();
+  ConsumerState<UserOnboardingScreen> createState() =>
+      _UserOnboardingScreenState();
 }
 
-class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
+class _UserOnboardingScreenState
+    extends ConsumerState<UserOnboardingScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dayController = TextEditingController();
   final TextEditingController _monthController = TextEditingController();
@@ -140,7 +146,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
     return null;
   }
 
-  void _onNext() {
+  Future<void> _onNext() async {
     final nameErr = _validateName();
     final dobErr = _validateDob();
 
@@ -171,15 +177,43 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
       return;
     }
 
-    // All valid -> proceed to HomeScreen
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+    final day = _dayController.text.trim();
+    final month = _monthController.text.trim().padLeft(2, '0');
+    final year = _yearController.text.trim();
+
+    FocusScope.of(context).unfocus();
+
+    final success = await ref.read(authControllerProvider.notifier).register(
+          firstName: _nameController.text.trim(),
+          gender: _selectedGender,
+          day: day,
+          month: month,
+          year: year,
+        );
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      final err = ref.read(authControllerProvider).error ??
+          'Registration failed. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
     final calculatedAge = _calculateAge();
 
     return Scaffold(
@@ -489,7 +523,10 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
               // Bottom Button
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-                child: PrimaryButton(text: 'Next', onPressed: _onNext),
+                child: PrimaryButton(
+                  text: authState.isLoading ? 'Saving...' : 'Next',
+                  onPressed: authState.isLoading ? null : _onNext,
+                ),
               ),
             ],
           ),

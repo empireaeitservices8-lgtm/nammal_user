@@ -1,10 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
-import 'widgets/auth_widgets.dart';
 import 'phone_login_screen.dart';
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    Timer(const Duration(milliseconds: 2500), () {
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PhoneLoginScreen()),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +39,9 @@ class SplashScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               children: [
-                const Spacer(flex: 3),
-
                 // Center Logo
+                const SizedBox(height: 200),
                 Image.asset("assets/images/logo_transparent.png"),
-
                 const Text(
                   'Where Meaningful Connections Bloom',
                   textAlign: TextAlign.center,
@@ -33,36 +52,6 @@ class SplashScreen extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-
-                const Spacer(flex: 4),
-
-                // Action Buttons
-                PrimaryButton(
-                  text: 'Create Account',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const PhoneLoginScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-                SecondaryButton(
-                  text: 'I already have an account / Log in',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const PhoneLoginScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Footer
-                const TermsFooter(),
-                const SizedBox(height: 8),
               ],
             ),
           ),
