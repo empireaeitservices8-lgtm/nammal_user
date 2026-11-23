@@ -1,3 +1,43 @@
+class LogoutResponse {
+  final String message;
+
+  const LogoutResponse({required this.message});
+
+  factory LogoutResponse.fromJson(Map<String, dynamic> json) {
+    return LogoutResponse(
+      message: (json['message'] ?? 'Logout successful').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'message': message};
+}
+
+class DeleteAccountResponse {
+  final String status;
+  final String message;
+
+  const DeleteAccountResponse({
+    required this.status,
+    required this.message,
+  });
+
+  bool get isSuccess => status.toLowerCase() == 'success';
+
+  factory DeleteAccountResponse.fromJson(Map<String, dynamic> json) {
+    return DeleteAccountResponse(
+      status: (json['status'] ?? 'success').toString(),
+      message: (json['message'] ??
+              'Your account has been deleted successfully.')
+          .toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'status': status,
+        'message': message,
+      };
+}
+
 class SendOtpResponse {
   final String status;
   final String message;

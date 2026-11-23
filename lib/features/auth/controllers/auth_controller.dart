@@ -181,11 +181,21 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<void> logout() async {
-    await _repository.logout();
+  Future<LogoutResponse> logout() async {
+    state = state.copyWith(isLoading: true);
+    final response = await _repository.logout();
     state = const AuthState();
+    return response;
+  }
+
+  Future<DeleteAccountResponse> deleteAccount() async {
+    state = state.copyWith(isLoading: true);
+    final response = await _repository.deleteAccount();
+    state = const AuthState();
+    return response;
   }
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);

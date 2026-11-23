@@ -11,7 +11,7 @@ class ApiEndpoints {
   static const String sendOtp = '/api/user/send-otp/';
   static const String verifyOtp = '/api/user/verify-otp/';
   static const String login = '/api/user/login/';
-  static const String logout = '/api/user/logout/';
+  static const String logout = '/api/logout/';
 
   // --- User Profile ---
   static const String profile = '/api/user/profile/';

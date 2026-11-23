@@ -1,22 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/storage_service.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../../auth/views/phone_login_screen.dart';
 import 'edit_profile_screen.dart';
 
-class ProfileTab extends StatefulWidget {
+class ProfileTab extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToWallet;
 
   const ProfileTab({super.key, this.onNavigateToWallet});
 
   @override
-  State<ProfileTab> createState() => _ProfileTabState();
+  ConsumerState<ProfileTab> createState() => _ProfileTabState();
 }
 
-class _ProfileTabState extends State<ProfileTab> {
+class _ProfileTabState extends ConsumerState<ProfileTab> {
   String _name = '';
   String _phone = '+91';
   DateTime _dob = DateTime(2000, 5, 24);
@@ -404,29 +406,91 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _performLogout() async {
-    // 1. Clear local session data (tokens, user id, login status)
+    // Show non-dismissible loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
+    );
+
+    String message = 'Logout successful';
     try {
-      final storage = StorageService();
-      await storage.init();
-      await storage.clearAll();
+      final res = await ref.read(authControllerProvider.notifier).logout();
+      if (res.message.isNotEmpty) {
+        message = res.message;
+      }
     } catch (e) {
-      debugPrint('Error clearing session storage: $e');
+      debugPrint('Error during logout: $e');
     }
 
     if (!mounted) return;
 
-    // 2. Navigate to PhoneLoginScreen and clear navigation stack so back button cannot return
+    // Dismiss the loading dialog
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // Navigate to PhoneLoginScreen and clear navigation stack so back button cannot return
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
       (route) => false,
     );
 
-    // 3. User feedback notification
+    // User feedback notification
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully'),
-        backgroundColor: Color(0xFF10B981),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF10B981),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _performDeleteAccount() async {
+    // Show non-dismissible loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: CircularProgressIndicator(color: Color(0xFFEF4444)),
+        ),
+      ),
+    );
+
+    String message = 'Your account has been deleted successfully.';
+    try {
+      final res = await ref
+          .read(authControllerProvider.notifier)
+          .deleteAccount();
+      if (res.message.isNotEmpty) {
+        message = res.message;
+      }
+    } catch (e) {
+      debugPrint('Error during delete account: $e');
+    }
+
+    if (!mounted) return;
+
+    // Dismiss loading indicator
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // Navigate to PhoneLoginScreen and clear navigation stack so back button cannot return
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
+      (route) => false,
+    );
+
+    // User feedback notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFEF4444),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -486,25 +550,7 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              try {
-                final storage = StorageService();
-                await storage.init();
-                await storage.clearAll();
-              } catch (e) {
-                debugPrint('Error clearing session on delete: $e');
-              }
-              if (!mounted || !context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
-                (route) => false,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Your account has been deleted.'),
-                  backgroundColor: Color(0xFFEF4444),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              await _performDeleteAccount();
             },
             child: const Text(
               'Delete Account',

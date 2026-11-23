@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:nammal_user/features/home/views/profile_screen.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/services/storage_service.dart';
 import '../../wallet/walletscreen.dart';
+import '../controllers/home_controller.dart';
 import 'audio_calling_screen.dart';
 import 'video_calling_screen.dart';
 
@@ -22,7 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          const _DiscoverPeopleTab(),
+          _DiscoverPeopleTab(
+            onNavigateToWallet: () => setState(() => _currentIndex = 1),
+          ),
           const WalletTab(),
           ProfileTab(
             onNavigateToWallet: () => setState(() => _currentIndex = 1),
@@ -96,12 +102,23 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ----------------- TAB 1: Discover People (Matching Screenshot) -----------------
-class _DiscoverPeopleTab extends StatelessWidget {
-  const _DiscoverPeopleTab();
+class _DiscoverPeopleTab extends ConsumerWidget {
+  final VoidCallback? onNavigateToWallet;
+
+  const _DiscoverPeopleTab({this.onNavigateToWallet});
 
   @override
-  Widget build(BuildContext context) {
-    final busyAgents = [
+  Widget build(BuildContext context, WidgetRef ref) {
+    final homeState = ref.watch(homeControllerProvider);
+    final homeData = homeState.data;
+    final storage = ref.watch(storageServiceProvider);
+
+    final userName = (homeData?.user.name.isNotEmpty == true)
+        ? homeData!.user.name
+        : (storage.getUserName() ?? '');
+    final coins = homeData?.user.coins ?? 0;
+
+    final demoBusyAgents = [
       {
         'name': 'Sophia',
         'age': '24',
@@ -140,7 +157,7 @@ class _DiscoverPeopleTab extends StatelessWidget {
       },
     ];
 
-    final agents = [
+    final demoAgents = [
       {
         'name': 'Liya',
         'age': '26',
@@ -185,68 +202,152 @@ class _DiscoverPeopleTab extends StatelessWidget {
       },
     ];
 
+    final onlineAgents = (homeData != null && homeData.onlineHosts.isNotEmpty)
+        ? homeData.onlineHosts.map((h) {
+            if (h is Map<String, dynamic>) {
+              return {
+                'name': (h['name'] ?? h['username'] ?? 'Host').toString(),
+                'age': (h['age'] ?? '24').toString(),
+                'image':
+                    (h['avatar_url'] ??
+                            h['avatar'] ??
+                            h['image'] ??
+                            h['profile_picture'] ??
+                            '')
+                        .toString(),
+                'isOnline': true,
+              };
+            }
+            return demoAgents.first;
+          }).toList()
+        : demoAgents;
+
+    final busyAgents = (homeData != null && homeData.busyHosts.isNotEmpty)
+        ? homeData.busyHosts.map((h) {
+            if (h is Map<String, dynamic>) {
+              return {
+                'name': (h['name'] ?? h['username'] ?? 'Host').toString(),
+                'age': (h['age'] ?? '24').toString(),
+                'image':
+                    (h['avatar_url'] ??
+                            h['avatar'] ??
+                            h['image'] ??
+                            h['profile_picture'] ??
+                            '')
+                        .toString(),
+              };
+            }
+            return demoBusyAgents.first;
+          }).toList()
+        : demoBusyAgents;
+
+    final displayOnlineCount = homeData != null
+        ? homeData.onlineCount
+        : onlineAgents.length;
+    final displayBusyCount = homeData != null
+        ? homeData.busyCount
+        : busyAgents.length;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(66),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Avatar + Logo
+                // Avatar + User Name + Brand
                 Row(
                   children: [
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFE4DCFD),
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'nammal',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 26,
-                        fontFamily: 'Chillax',
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
+                      child: Center(
+                        child: Text(
+                          (userName.isNotEmpty ? userName[0] : 'N')
+                              .toUpperCase(),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          userName.isNotEmpty ? 'Hi, $userName' : 'Welcome',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Text(
+                          'nammal',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontFamily: 'Chillax',
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
 
                 // Coin Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3EFFF),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.monetization_on,
-                        color: Color(0xFFF59E0B),
-                        size: 16,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        '1,250 Coins',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                InkWell(
+                  onTap: () {
+                    if (onNavigateToWallet != null) {
+                      onNavigateToWallet!();
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3EFFF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.monetization_on,
+                          color: Color(0xFFF59E0B),
+                          size: 16,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          '${NumberFormat('#,###').format(coins)} Coins',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -254,181 +355,195 @@ class _DiscoverPeopleTab extends StatelessWidget {
           ),
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          // 1. Online Section Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Discover People',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => ref.read(homeControllerProvider.notifier).refresh(),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (homeState.isLoading && homeData == null)
+              const SliverToBoxAdapter(
+                child: LinearProgressIndicator(
+                  minHeight: 2.5,
+                  color: AppColors.primary,
+                  backgroundColor: Color(0xFFEDE9FE),
+                ),
+              ),
+
+            // 1. Online Section Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Discover People',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD1FAE5),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              color: AppColors.statusOnline,
-                              size: 7,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Online',
-                              style: TextStyle(
-                                color: Color(0xFF065F46),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD1FAE5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                color: AppColors.statusOnline,
+                                size: 7,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${agents.length} Online',
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 2. Discover People Grid (Online Users)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.64,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 16,
-              ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final agent = agents[index];
-                return _AgentCard(
-                  name: agent['name'] as String,
-                  age: agent['age'] as String,
-                  imageUrl: agent['image'] as String,
-                  isOnline: agent['isOnline'] as bool,
-                  isBusy: (agent['isBusy'] as bool?) ?? false,
-                );
-              }, childCount: agents.length),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 18)),
-
-          // 3. Busy Section Header (After Online)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Busy',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              color: AppColors.statusBusy,
-                              size: 7,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'On Call',
-                              style: TextStyle(
-                                color: AppColors.statusBusy,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                              SizedBox(width: 4),
+                              Text(
+                                'Online',
+                                style: TextStyle(
+                                  color: Color(0xFF065F46),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${busyAgents.length} Busy',
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      ],
                     ),
-                  ),
-                ],
+                    Text(
+                      '$displayOnlineCount Online',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // 4. Busy Slider (Horizontal scrollable carousel after online)
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 195,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: busyAgents.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final busy = busyAgents[index];
-                  return _BusySliderCard(
-                    name: busy['name'] as String,
-                    age: busy['age'] as String,
-                    imageUrl: busy['image'] as String,
+            // 2. Discover People Grid (Online Users)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.64,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 16,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final agent = onlineAgents[index];
+                  return _AgentCard(
+                    name: agent['name'] as String,
+                    age: agent['age'] as String,
+                    imageUrl: agent['image'] as String,
+                    isOnline: (agent['isOnline'] as bool?) ?? true,
+                    isBusy: (agent['isBusy'] as bool?) ?? false,
                   );
-                },
+                }, childCount: onlineAgents.length),
               ),
             ),
-          ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 28)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+            // 3. Busy Section Header (After Online)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Busy',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                color: AppColors.statusBusy,
+                                size: 7,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'On Call',
+                                style: TextStyle(
+                                  color: AppColors.statusBusy,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '$displayBusyCount Busy',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 4. Busy Slider (Horizontal scrollable carousel after online)
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 195,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: busyAgents.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final busy = busyAgents[index];
+                    return _BusySliderCard(
+                      name: busy['name'] as String,
+                      age: busy['age'] as String,
+                      imageUrl: busy['image'] as String,
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+          ],
+        ),
       ),
     );
   }
@@ -505,27 +620,41 @@ class _AgentCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(22),
                   ),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.keypadButtonBg,
-                        child: Center(
-                          child: Text(
-                            name[0],
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: AppColors.keypadButtonBg,
+                              child: Center(
+                                child: Text(
+                                  name.isNotEmpty ? name[0] : '?',
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: AppColors.keypadButtonBg,
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0] : '?',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
                 ),
 
                 // Gradient Overlay for text readability
@@ -782,27 +911,41 @@ class _BusySliderCard extends StatelessWidget {
             // Full card image
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.keypadButtonBg,
-                    child: Center(
-                      child: Text(
-                        name.isNotEmpty ? name[0] : '?',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.keypadButtonBg,
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty ? name[0] : '?',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: AppColors.keypadButtonBg,
+                      child: Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0] : '?',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
             ),
 
             // Gradient Overlay for text readability

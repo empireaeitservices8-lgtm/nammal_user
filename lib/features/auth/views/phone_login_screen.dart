@@ -174,7 +174,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: '9846123456',
+                            hintText: ' Your Mobile Number',
                             hintStyle: TextStyle(
                               color: AppColors.textPlaceholder,
                               fontSize: 17,

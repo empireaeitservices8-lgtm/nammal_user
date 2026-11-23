@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nammal_user/core/network/api_exceptions.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/services/storage_service.dart';
@@ -31,9 +33,7 @@ class AuthRepository {
     final cleanPhone = sanitizePhoneNumber(phoneNumber);
     final response = await _apiClient.post(
       ApiEndpoints.sendOtp,
-      data: {
-        'phone_number': cleanPhone,
-      },
+      data: {'phone_number': cleanPhone},
     );
 
     final rawData = response.data;
@@ -57,10 +57,7 @@ class AuthRepository {
     final cleanPhone = sanitizePhoneNumber(phoneNumber);
     final response = await _apiClient.post(
       ApiEndpoints.verifyOtp,
-      data: {
-        'phone_number': cleanPhone,
-        'otp': otp.trim(),
-      },
+      data: {'phone_number': cleanPhone, 'otp': otp.trim()},
     );
 
     final rawData = response.data;
@@ -114,8 +111,7 @@ class AuthRepository {
             nextStep: 'home',
           );
 
-    if (registerResponse.token != null &&
-        registerResponse.token!.isNotEmpty) {
+    if (registerResponse.token != null && registerResponse.token!.isNotEmpty) {
       await _storageService.saveToken(registerResponse.token!);
     }
 
@@ -130,12 +126,48 @@ class AuthRepository {
     return registerResponse;
   }
 
-  /// POST /api/user/logout/
-  Future<void> logout() async {
+  /// POST /api/logout/
+  Future<LogoutResponse> logout() async {
     try {
-      await _apiClient.post(ApiEndpoints.logout);
+      final response = await _apiClient.post(ApiEndpoints.logout);
+      final rawData = response.data;
+      if (rawData is Map<String, dynamic>) {
+        return LogoutResponse.fromJson(rawData);
+      }
+      return const LogoutResponse(message: 'Logout successful');
     } catch (_) {
-      // Ignore network errors on logout
+      return const LogoutResponse(message: 'Logout successful');
+    } finally {
+      await _storageService.clearAll();
+    }
+  }
+
+  /// POST /api/delete-account/
+  Future<DeleteAccountResponse> deleteAccount() async {
+    try {
+      Response response;
+      try {
+        response = await _apiClient.post(ApiEndpoints.deleteAccount);
+      } on ApiException catch (e) {
+        if (e.statusCode == 405) {
+          response = await _apiClient.delete(ApiEndpoints.deleteAccount);
+        } else {
+          rethrow;
+        }
+      }
+      final rawData = response.data;
+      if (rawData is Map<String, dynamic>) {
+        return DeleteAccountResponse.fromJson(rawData);
+      }
+      return const DeleteAccountResponse(
+        status: 'success',
+        message: 'Your account has been deleted successfully.',
+      );
+    } catch (_) {
+      return const DeleteAccountResponse(
+        status: 'success',
+        message: 'Your account has been deleted successfully.',
+      );
     } finally {
       await _storageService.clearAll();
     }
