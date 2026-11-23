@@ -5,6 +5,7 @@ class AppColors {
   static const Color primary = Color(0xFF5F3ADD);
   static const Color primaryDark = Color(0xFF4526D1);
   static const Color primaryLight = Color(0xFF7B61FF);
+  static const Color genderSelected = Color(0xFF856DFA);
 
   // Backgrounds & Gradients
   static const Color backgroundTop = Color(0xFFF3EEFF);
@@ -33,4 +34,6 @@ class AppColors {
   // Status
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
+  static const Color statusOnline = Color(0xFF10B981);
+  static const Color statusBusy = Color(0xFFEF4444);
 }

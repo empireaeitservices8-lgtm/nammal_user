@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:nammal_user/features/home/views/profile_screen.dart';
 import '../../../core/config/app_colors.dart';
-import 'call_simulation_screen.dart';
+import '../../wallet/walletscreen.dart';
+import 'audio_calling_screen.dart';
+import 'video_calling_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,17 +21,21 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          _DiscoverPeopleTab(),
-          _WalletTab(),
-          _ProfileTab(),
+        children: [
+          const _DiscoverPeopleTab(),
+          const WalletTab(),
+          ProfileTab(
+            onNavigateToWallet: () => setState(() => _currentIndex = 1),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: AppColors.borderSubtle.withValues(alpha: 0.6)),
+            top: BorderSide(
+              color: AppColors.borderSubtle.withValues(alpha: 0.6),
+            ),
           ),
         ),
         child: SafeArea(
@@ -37,8 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.explore, 'Home'),
-                _buildNavItem(1, Icons.account_balance_wallet_outlined, 'Wallet'),
+                _buildNavItem(0, Icons.home_outlined, 'Home'),
+                _buildNavItem(
+                  1,
+                  Icons.account_balance_wallet_outlined,
+                  'Wallet',
+                ),
                 _buildNavItem(2, Icons.person_outline_rounded, 'Profile'),
               ],
             ),
@@ -90,41 +101,86 @@ class _DiscoverPeopleTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final busyAgents = [
+      {
+        'name': 'Sophia',
+        'age': '24',
+        'image':
+            'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'name': 'Zara',
+        'age': '22',
+        'image':
+            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'name': 'Maya',
+        'age': '25',
+        'image':
+            'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'name': 'Aarav',
+        'age': '29',
+        'image':
+            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'name': 'Elena',
+        'age': '27',
+        'image':
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
+      },
+      {
+        'name': 'Rohan',
+        'age': '28',
+        'image':
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80',
+      },
+    ];
+
     final agents = [
       {
         'name': 'Liya',
         'age': '26',
-        'image': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
       {
         'name': 'Amal',
         'age': '32',
-        'image': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
       {
         'name': 'Liam',
         'age': '26',
-        'image': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
       {
         'name': 'Chloe',
         'age': '23',
-        'image': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
       {
         'name': 'Daniel',
         'age': '27',
-        'image': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
       {
         'name': 'Olivia',
         'age': '28',
-        'image': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
+        'image':
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
         'isOnline': true,
       },
     ];
@@ -166,14 +222,21 @@ class _DiscoverPeopleTab extends StatelessWidget {
 
                 // Coin Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3EFFF),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.monetization_on, color: Color(0xFFF59E0B), size: 16),
+                      Icon(
+                        Icons.monetization_on,
+                        color: Color(0xFFF59E0B),
+                        size: 16,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         '1,250 Coins',
@@ -193,19 +256,69 @@ class _DiscoverPeopleTab extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          const SliverToBoxAdapter(
+          // 1. Online Section Header
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(18, 14, 18, 12),
-              child: Text(
-                'Discover People',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Discover People',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD1FAE5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              color: AppColors.statusOnline,
+                              size: 7,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Online',
+                              style: TextStyle(
+                                color: Color(0xFF065F46),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${agents.length} Online',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+
+          // 2. Discover People Grid (Online Users)
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             sliver: SliverGrid(
@@ -215,23 +328,106 @@ class _DiscoverPeopleTab extends StatelessWidget {
                 crossAxisSpacing: 14,
                 mainAxisSpacing: 16,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final agent = agents[index];
-                  return _AgentCard(
-                    name: agent['name'] as String,
-                    age: agent['age'] as String,
-                    imageUrl: agent['image'] as String,
-                    isOnline: agent['isOnline'] as bool,
-                  );
-                },
-                childCount: agents.length,
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final agent = agents[index];
+                return _AgentCard(
+                  name: agent['name'] as String,
+                  age: agent['age'] as String,
+                  imageUrl: agent['image'] as String,
+                  isOnline: agent['isOnline'] as bool,
+                  isBusy: (agent['isBusy'] as bool?) ?? false,
+                );
+              }, childCount: agents.length),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+          // 3. Busy Section Header (After Online)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Busy',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              color: AppColors.statusBusy,
+                              size: 7,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'On Call',
+                              style: TextStyle(
+                                color: AppColors.statusBusy,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${busyAgents.length} Busy',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
+
+          // 4. Busy Slider (Horizontal scrollable carousel after online)
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 195,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: busyAgents.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final busy = busyAgents[index];
+                  return _BusySliderCard(
+                    name: busy['name'] as String,
+                    age: busy['age'] as String,
+                    imageUrl: busy['image'] as String,
+                  );
+                },
+              ),
+            ),
           ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 28)),
         ],
       ),
     );
@@ -243,13 +439,46 @@ class _AgentCard extends StatelessWidget {
   final String age;
   final String imageUrl;
   final bool isOnline;
+  final bool isBusy;
 
   const _AgentCard({
     required this.name,
     required this.age,
     required this.imageUrl,
-    required this.isOnline,
+    this.isOnline = true,
+    this.isBusy = false,
   });
+
+  void _showBusyAlert(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.phone_in_talk_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$name is currently busy on another call',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.statusBusy,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +502,9 @@ class _AgentCard extends StatelessWidget {
             child: Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
                   child: Image.network(
                     imageUrl,
                     width: double.infinity,
@@ -301,7 +532,9 @@ class _AgentCard extends StatelessWidget {
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(22),
+                      ),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -316,13 +549,16 @@ class _AgentCard extends StatelessWidget {
                   ),
                 ),
 
-                // Online Badge
-                if (isOnline)
+                // Status Badge (Busy Red spot or Online Green spot)
+                if (isBusy)
                   Positioned(
                     top: 10,
                     left: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(14),
@@ -330,7 +566,45 @@ class _AgentCard extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.circle, color: Color(0xFF10B981), size: 8),
+                          Icon(
+                            Icons.circle,
+                            color: AppColors.statusBusy,
+                            size: 8,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Busy',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (isOnline)
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.circle,
+                            color: AppColors.statusOnline,
+                            size: 8,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Online',
@@ -373,10 +647,16 @@ class _AgentCard extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
+                      if (isBusy) {
+                        _showBusyAlert(context);
+                        return;
+                      }
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const CallSimulationScreen(
-                            callType: CallType.audio,
+                          builder: (_) => AudioCallingScreen(
+                            name: name,
+                            age: age,
+                            imageUrl: imageUrl,
                           ),
                         ),
                       );
@@ -402,11 +682,13 @@ class _AgentCard extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
+                      if (isBusy) {
+                        _showBusyAlert(context);
+                        return;
+                      }
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const CallSimulationScreen(
-                            callType: CallType.video,
-                          ),
+                          builder: (_) => const VideoCallingScreen(),
                         ),
                       );
                     },
@@ -433,275 +715,168 @@ class _AgentCard extends StatelessWidget {
   }
 }
 
-// ----------------- TAB 2: Wallet Screen -----------------
-class _WalletTab extends StatelessWidget {
-  const _WalletTab();
+// ----------------- Busy Slider Card -----------------
+class _BusySliderCard extends StatelessWidget {
+  final String name;
+  final String age;
+  final String imageUrl;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'My Wallet',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenGradient,
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
+  const _BusySliderCard({
+    required this.name,
+    required this.age,
+    required this.imageUrl,
+  });
+
+  void _showBusyAlert(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            // Balance Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Available Balance',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.monetization_on, color: Color(0xFFFFD700), size: 32),
-                      SizedBox(width: 10),
-                      Text(
-                        '1,250 Coins',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            const Icon(
+              Icons.phone_in_talk_rounded,
+              color: Colors.white,
+              size: 18,
             ),
-            const SizedBox(height: 24),
-
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Buy Coins',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
+            const SizedBox(width: 8),
             Expanded(
-              child: ListView(
-                children: const [
-                  _CoinPackageCard(coins: '100 Coins', price: '₹99'),
-                  _CoinPackageCard(coins: '250 Coins', price: '₹229', isPopular: true),
-                  _CoinPackageCard(coins: '500 Coins', price: '₹449'),
-                  _CoinPackageCard(coins: '1,250 Coins', price: '₹999'),
-                ],
+              child: Text(
+                '$name is currently busy on another call',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
         ),
+        backgroundColor: AppColors.statusBusy,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
-}
-
-class _CoinPackageCard extends StatelessWidget {
-  final String coins;
-  final String price;
-  final bool isPopular;
-
-  const _CoinPackageCard({
-    required this.coins,
-    required this.price,
-    this.isPopular = false,
-  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isPopular ? AppColors.primary : AppColors.borderSubtle,
-          width: isPopular ? 1.8 : 1.0,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.monetization_on, color: Color(0xFFE5A100), size: 24),
-              const SizedBox(width: 12),
-              Text(
-                coins,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (isPopular) ...[
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'Popular',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.keypadButtonBg,
-              borderRadius: BorderRadius.circular(20),
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: () => _showBusyAlert(context),
+      child: Container(
+        width: 135,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.borderSubtle, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-            child: Text(
-              price,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ----------------- TAB 3: Profile Screen -----------------
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
+          ],
         ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenGradient,
-        ),
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+        child: Stack(
           children: [
-            const Center(
-              child: CircleAvatar(
-                radius: 46,
-                backgroundColor: AppColors.keypadButtonBg,
-                child: Icon(Icons.person, size: 50, color: AppColors.primary),
+            // Full card image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.keypadButtonBg,
+                    child: Center(
+                      child: Text(
+                        name.isNotEmpty ? name[0] : '?',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 12),
-            const Center(
+
+            // Gradient Overlay for text readability
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.0),
+                      Colors.black.withValues(alpha: 0.70),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Busy Red Badge Spot (matching online green badge spot)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.circle, color: AppColors.statusBusy, size: 8),
+                    SizedBox(width: 4),
+                    Text(
+                      'Busy',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Name and Age
+            Positioned(
+              bottom: 12,
+              left: 10,
+              right: 10,
               child: Text(
-                'Elena',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 22,
+                '$name, $age',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-            const Center(
-              child: Text(
-                '+91 9876543210',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            _buildTile(Icons.edit_outlined, 'Edit Profile'),
-            _buildTile(Icons.history_rounded, 'Transaction History'),
-            _buildTile(Icons.notifications_outlined, 'Notifications'),
-            _buildTile(Icons.privacy_tip_outlined, 'Privacy Policy'),
-            _buildTile(Icons.description_outlined, 'Terms of Service'),
-            _buildTile(Icons.delete_outline, 'Delete Account', isDestructive: true),
-            _buildTile(Icons.logout, 'Log Out', isDestructive: true),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTile(IconData icon, String title, {bool isDestructive = false}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isDestructive ? AppColors.error : AppColors.primary,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isDestructive ? AppColors.error : AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
-        onTap: () {},
       ),
     );
   }

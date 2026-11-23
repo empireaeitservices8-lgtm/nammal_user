@@ -7,19 +7,19 @@ import 'user_onboarding_screen.dart';
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
 
-  const OtpVerificationScreen({
-    super.key,
-    this.phoneNumber = '+91 9876543210',
-  });
+  const OtpVerificationScreen({super.key, this.phoneNumber = '+91 9876543210'});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  String _enteredOtp = '582'; // Pre-filled with 3 digits to match design demo
+  String _enteredOtp = '';
   int _secondsRemaining = 45;
   Timer? _timer;
+  bool _isVerifying = false;
+  bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -46,32 +46,104 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _onKeyPress(String value) {
+    if (_isVerifying) return;
+
     if (_enteredOtp.length < 4) {
       setState(() {
+        _hasError = false;
+        _errorMessage = null;
         _enteredOtp += value;
       });
+
+      // Auto verify when 4th digit is entered
+      if (_enteredOtp.length == 4) {
+        _onVerify();
+      }
     }
   }
 
   void _onBackspace() {
+    if (_isVerifying) return;
+
     if (_enteredOtp.isNotEmpty) {
       setState(() {
+        _hasError = false;
+        _errorMessage = null;
         _enteredOtp = _enteredOtp.substring(0, _enteredOtp.length - 1);
       });
     }
   }
 
   void _onClear() {
+    if (_isVerifying) return;
+
     setState(() {
+      _hasError = false;
+      _errorMessage = null;
       _enteredOtp = '';
     });
   }
 
-  void _onVerify() {
-    // Navigate to Onboarding screen (name, age, gender)
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const UserOnboardingScreen()),
+  void _resendCode() {
+    if (_secondsRemaining > 0) return;
+
+    setState(() {
+      _enteredOtp = '';
+      _hasError = false;
+      _errorMessage = null;
+    });
+    _startTimer();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'A new 4-digit code has been sent to ${widget.phoneNumber}',
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        duration: const Duration(seconds: 2),
+      ),
     );
+  }
+
+  void _onVerify() async {
+    if (_isVerifying) return;
+
+    // Validation: check complete 4 digits
+    if (_enteredOtp.length != 4) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Please enter all 4 digits of the verification code';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter all 4 digits of the verification code'),
+          backgroundColor: Color(0xFFEF4444),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+      _hasError = false;
+      _errorMessage = null;
+    });
+
+    // Simulated short verification latency
+    await Future.delayed(const Duration(milliseconds: 350));
+
+    if (!mounted) return;
+
+    setState(() {
+      _isVerifying = false;
+    });
+
+    // Navigate to Onboarding screen
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const UserOnboardingScreen()));
   }
 
   @override
@@ -81,9 +153,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.screenGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -93,7 +163,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // Title
                       const Text(
@@ -104,6 +174,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Subtitle with phone number and edit button
+                      Row(
+                        children: [
+                          Text(
+                            'Sent to ${widget.phoneNumber}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: const Text(
+                              'Edit',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
 
@@ -133,22 +230,48 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               children: List.generate(4, (index) {
                                 final isFilled = index < _enteredOtp.length;
                                 final isActive = index == _enteredOtp.length;
-                                final digit = isFilled ? _enteredOtp[index] : '';
+                                final digit = isFilled
+                                    ? _enteredOtp[index]
+                                    : '';
 
-                                return Container(
+                                Color boxBorderColor;
+                                double boxBorderWidth = 1.5;
+
+                                if (_hasError) {
+                                  boxBorderColor = const Color(0xFFEF4444);
+                                  boxBorderWidth = 1.8;
+                                } else if (isActive) {
+                                  boxBorderColor = AppColors.primary;
+                                  boxBorderWidth = 2.0;
+                                } else if (isFilled) {
+                                  boxBorderColor = AppColors.primary.withValues(
+                                    alpha: 0.5,
+                                  );
+                                } else {
+                                  boxBorderColor = AppColors.borderSubtle;
+                                }
+
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
                                   width: 62,
                                   height: 68,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: isActive
-                                          ? AppColors.primary
-                                          : (isFilled
-                                              ? AppColors.primary.withValues(alpha: 0.4)
-                                              : AppColors.borderSubtle),
-                                      width: isActive ? 2.0 : 1.5,
+                                      color: boxBorderColor,
+                                      width: boxBorderWidth,
                                     ),
+                                    boxShadow: isActive
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.15),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                   child: Center(
                                     child: isFilled
@@ -161,16 +284,44 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                             ),
                                           )
                                         : (isActive
-                                            ? Container(
-                                                width: 2,
-                                                height: 30,
-                                                color: AppColors.primary,
-                                              )
-                                            : null),
+                                              ? Container(
+                                                  width: 2,
+                                                  height: 30,
+                                                  color: _hasError
+                                                      ? const Color(0xFFEF4444)
+                                                      : AppColors.primary,
+                                                )
+                                              : null),
                                   ),
                                 );
                               }),
                             ),
+
+                            // Error Message Banner
+                            if (_hasError) ...[
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    color: Color(0xFFEF4444),
+                                    size: 15,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _errorMessage ??
+                                        'Please enter the complete 4-digit code',
+                                    style: const TextStyle(
+                                      color: Color(0xFFEF4444),
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+
                             const SizedBox(height: 20),
 
                             // Timer & Resend
@@ -197,7 +348,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                 ),
                                 GestureDetector(
                                   onTap: _secondsRemaining == 0
-                                      ? _startTimer
+                                      ? _resendCode
                                       : null,
                                   child: Text(
                                     'Resend now',
@@ -236,11 +387,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ),
                         child: Column(
                           children: [
-                            _buildKeypadRow(['1', '2', '3'], ['', 'ABC', 'DEF']),
+                            _buildKeypadRow(
+                              ['1', '2', '3'],
+                              ['', 'ABC', 'DEF'],
+                            ),
                             const SizedBox(height: 12),
-                            _buildKeypadRow(['4', '5', '6'], ['GHI', 'JKL', 'MNO']),
+                            _buildKeypadRow(
+                              ['4', '5', '6'],
+                              ['GHI', 'JKL', 'MNO'],
+                            ),
                             const SizedBox(height: 12),
-                            _buildKeypadRow(['7', '8', '9'], ['PQRS', 'TUV', 'WXYZ']),
+                            _buildKeypadRow(
+                              ['7', '8', '9'],
+                              ['PQRS', 'TUV', 'WXYZ'],
+                            ),
                             const SizedBox(height: 12),
                             _buildBottomKeypadRow(),
                           ],
@@ -256,8 +416,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
                 child: PrimaryButton(
-                  text: 'Verify & Continue',
-                  onPressed: _enteredOtp.length == 4 ? _onVerify : _onVerify,
+                  text: _isVerifying ? 'Verifying...' : 'Verify & Continue',
+                  onPressed: _isVerifying ? null : _onVerify,
                 ),
               ),
             ],

@@ -1,35 +1,43 @@
 class ApiEndpoints {
   // Replace with your real backend base URL or development IP
-  static const String baseUrl = 'https://api.nammal.app/api/v1';
+  static const String baseUrl = 'https://nammaluser.pythonanywhere.com';
 
   // Request Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   // --- Auth Endpoints ---
-  static const String sendOtp = '/auth/send-otp';
-  static const String verifyOtp = '/auth/verify-otp';
-  static const String refreshToken = '/auth/refresh-token';
+  static const String register = 'api/user/register/';
+  static const String sendOtp = '/api/user/send-otp/';
+  static const String verifyOtp = '/api/user/verify-otp/';
+  static const String login = '/api/user/login/';
+  static const String logout = '/api/user/logout/';
 
   // --- User Profile ---
-  static const String profile = '/user/profile';
-  static const String updateProfile = '/user/profile/update';
-  static const String deleteAccount = '/user/account/delete';
+  static const String profile = '/api/user/profile/';
+  static const String avatar = '/api/user/avatar/';
+  static const String deleteAccount = '/api/delete-account/';
+
+  // --- Home Endpoints ---
+  static const String home = '/api/user/home/';
 
   // --- Agents Discovery ---
   static const String onlineAgents = '/agents/online';
   static const String agentDetails = '/agents'; // + '/{agentId}'
 
   // --- Agora Calling & Signaling ---
-  static const String initiateCall = '/calls/initiate';
-  static const String endCall = '/calls/end';
-  static const String callHeartbeat =
-      '/calls/heartbeat'; // For per-minute coin sync
-  static const String callHistory = '/calls/history';
+  static const String initiateCall = '/api/calls/initiate/';
+
+  // static const String callStatus = '/api/calls/';
+  static String callStatus(dynamic id) => '/api/calls/$id/';
+  static String callEnd(dynamic id) => '/api/calls/$id/status/';
+  // static const String callHeartbeat =
+  //     '/calls/heartbeat'; // For per-minute coin sync
+  static const String callHistory = '/api/user/calls/history/';
 
   // --- Wallet & Coins ---
-  static const String walletBalance = '/wallet/balance';
-  static const String coinPackages = '/wallet/packages';
-  static const String verifyPurchase = '/wallet/verify-purchase';
-  static const String transactions = '/wallet/transactions';
+  static const String walletBalance = '/api/user/wallet/';
+  static const String createPayment = '/api/user/payments/create-order/';
+  static const String verifyPurchase = '/api/user/payments/verify/';
+  static const String transactions = '/api/user/transactions/';
 }

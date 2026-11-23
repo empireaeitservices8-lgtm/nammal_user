@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/config/app_colors.dart';
 import 'widgets/auth_widgets.dart';
 import 'otp_verification_screen.dart';
@@ -12,7 +13,7 @@ class PhoneLoginScreen extends StatefulWidget {
 
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
-  String _selectedCountryCode = '+91';
+  final String _selectedCountryCode = '+91';
 
   @override
   void dispose() {
@@ -22,6 +23,17 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   void _onContinue() {
     final phoneNumber = _phoneController.text.trim();
+    if (phoneNumber.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid 10-digit mobile number'),
+          backgroundColor: Color(0xFFEF4444),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => OtpVerificationScreen(
@@ -126,6 +138,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                         child: TextField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
                           style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 17,
@@ -134,7 +150,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: '00000-00000',
+                            hintText: '00000 00000',
                             hintStyle: TextStyle(
                               color: AppColors.textPlaceholder,
                               fontSize: 17,
