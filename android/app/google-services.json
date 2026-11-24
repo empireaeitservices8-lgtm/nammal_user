@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "593427392842",
+    "project_id": "nammal-project",
+    "storage_bucket": "nammal-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593427392842:android:e110888b4c5f08f1b2b9b3",
+        "android_client_info": {
+          "package_name": "com.example.nammal_user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqFcbPABo3LPE0jIHNV6siWddNP3PjIrk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593427392842:android:f499e37423ab59f3b2b9b3",
+        "android_client_info": {
+          "package_name": "com.nammal.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqFcbPABo3LPE0jIHNV6siWddNP3PjIrk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

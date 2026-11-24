@@ -53,11 +53,16 @@ class AuthRepository {
   Future<VerifyOtpResponse> verifyOtp({
     required String phoneNumber,
     required String otp,
+    String? fcmToken,
   }) async {
     final cleanPhone = sanitizePhoneNumber(phoneNumber);
     final response = await _apiClient.post(
       ApiEndpoints.verifyOtp,
-      data: {'phone_number': cleanPhone, 'otp': otp.trim()},
+      data: {
+        'phone_number': cleanPhone,
+        'otp': otp.trim(),
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+      },
     );
 
     final rawData = response.data;
