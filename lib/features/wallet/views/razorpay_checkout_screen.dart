@@ -1,48 +1,113 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RazorpayCheckoutScreen extends StatefulWidget {
+import '../../../core/network/api_exceptions.dart';
+import '../controllers/wallet_controller.dart';
+import '../models/wallet_models.dart';
+import '../repositories/wallet_repository.dart';
+
+class RazorpayCheckoutScreen extends ConsumerStatefulWidget {
   final String coins;
   final String price;
   final int coinAmount;
+  final String? packId;
 
   const RazorpayCheckoutScreen({
     super.key,
     required this.coins,
     required this.price,
     this.coinAmount = 100,
+    this.packId,
   });
 
   @override
-  State<RazorpayCheckoutScreen> createState() => _RazorpayCheckoutScreenState();
+  ConsumerState<RazorpayCheckoutScreen> createState() =>
+      _RazorpayCheckoutScreenState();
 }
 
-class _RazorpayCheckoutScreenState extends State<RazorpayCheckoutScreen> {
+class _RazorpayCheckoutScreenState
+    extends ConsumerState<RazorpayCheckoutScreen> {
   String _selectedPaymentMethod = 'gpay';
   bool _isProcessing = false;
   bool _isSuccess = false;
+  String _createdOrderId = '';
+  CreateOrderResponse? _orderResponse;
+  AddCoinsResponse? _addCoinsResponse;
 
-  void _handlePay() {
+  void _handlePay() async {
     setState(() {
       _isProcessing = true;
     });
 
-    // Simulate authentic Razorpay authorization
-    Timer(const Duration(milliseconds: 1800), () {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _isSuccess = true;
-        });
+    try {
+      final effectivePackId = widget.packId ?? 'pack_${widget.coinAmount}';
+      final cleanPriceString = widget.price.replaceAll(RegExp(r'[^0-9.]'), '');
+      final num? parsedAmount = num.tryParse(cleanPriceString);
 
-        // After displaying success, pop back with success result
-        Timer(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            Navigator.of(context).pop(true);
-          }
-        });
+      // 1. Create order
+      final order = await ref
+          .read(walletRepositoryProvider)
+          .createOrder(
+            packId: effectivePackId,
+            coins: widget.coinAmount,
+            amount: parsedAmount,
+          );
+
+      // 2. Add coins to wallet via POST /api/user/coins/add/ {"coins": widget.coinAmount}
+      final addCoinsResponse = await ref
+          .read(walletControllerProvider.notifier)
+          .addCoins(widget.coinAmount);
+
+      // 3. Attempt test verification if supported
+      try {
+        await ref
+            .read(walletRepositoryProvider)
+            .verifyPayment(
+              orderId: order.orderId,
+              paymentId: 'pay_${order.orderId}',
+            );
+      } catch (_) {
+        // If server auto-verifies or uses webhook, ignore verify error
       }
-    });
+
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _isSuccess = true;
+        _createdOrderId = order.orderId;
+        _orderResponse = order;
+        _addCoinsResponse = addCoinsResponse;
+      });
+
+      Timer(const Duration(milliseconds: 1600), () {
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment processing failed. Please try again.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
   }
 
   @override
@@ -72,7 +137,7 @@ class _RazorpayCheckoutScreenState extends State<RazorpayCheckoutScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon( 
+                    Icon(
                       Icons.bolt_rounded,
                       color: Color(0xFF528FF0),
                       size: 16,
@@ -477,16 +542,40 @@ class _RazorpayCheckoutScreenState extends State<RazorpayCheckoutScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${widget.coins} added to your wallet',
+                          _addCoinsResponse != null
+                              ? _addCoinsResponse!.message
+                              : '${widget.coins} added to your wallet',
                           style: const TextStyle(
                             color: Color(0xFF10B981),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
+                          textAlign: TextAlign.center,
                         ),
+                        if (_addCoinsResponse != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Available Balance: ${_addCoinsResponse!.newBalance} Coins',
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Text(
-                          'Ref: pay_Rz${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
+                          'Ref: ${_createdOrderId.isNotEmpty ? _createdOrderId : "pay_Rz${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}"}',
                           style: const TextStyle(
                             color: Color(0xFF94A3B8),
                             fontSize: 10,

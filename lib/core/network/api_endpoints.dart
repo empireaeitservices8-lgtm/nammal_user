@@ -36,7 +36,9 @@ class ApiEndpoints {
   static const String callHistory = '/api/user/calls/history/';
 
   // --- Wallet & Coins ---
+  static const String wallet = '/api/user/wallet/';
   static const String walletBalance = '/api/user/wallet/';
+  static const String addCoins = '/api/user/coins/add/';
   static const String createPayment = '/api/user/payments/create-order/';
   static const String verifyPurchase = '/api/user/payments/verify/';
   static const String transactions = '/api/user/transactions/';

@@ -5,18 +5,20 @@ import 'package:nammal_user/features/home/views/profile_screen.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/storage_service.dart';
 import '../../wallet/walletscreen.dart';
+import '../../wallet/controllers/wallet_controller.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/profile_controller.dart';
 import 'audio_calling_screen.dart';
 import 'video_calling_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
 
   @override
@@ -27,11 +29,17 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: [
           _DiscoverPeopleTab(
-            onNavigateToWallet: () => setState(() => _currentIndex = 1),
+            onNavigateToWallet: () {
+              setState(() => _currentIndex = 1);
+              ref.read(walletControllerProvider.notifier).fetchWallet();
+            },
           ),
           const WalletTab(),
           ProfileTab(
-            onNavigateToWallet: () => setState(() => _currentIndex = 1),
+            onNavigateToWallet: () {
+              setState(() => _currentIndex = 1);
+              ref.read(walletControllerProvider.notifier).fetchWallet();
+            },
           ),
         ],
       ),
@@ -69,7 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSelected = _currentIndex == index;
     return InkWell(
       borderRadius: BorderRadius.circular(20),
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() => _currentIndex = index);
+        if (index == 1) {
+          ref.read(walletControllerProvider.notifier).fetchWallet();
+        } else if (index == 2) {
+          ref.read(profileControllerProvider.notifier).loadProfile();
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),

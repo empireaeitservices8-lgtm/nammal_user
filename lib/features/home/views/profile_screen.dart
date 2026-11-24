@@ -7,6 +7,8 @@ import '../../../core/config/app_colors.dart';
 import '../../../core/services/storage_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/views/phone_login_screen.dart';
+import '../../wallet/views/transaction_history_screen.dart';
+import '../controllers/profile_controller.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileTab extends ConsumerStatefulWidget {
@@ -19,20 +21,92 @@ class ProfileTab extends ConsumerStatefulWidget {
 }
 
 class _ProfileTabState extends ConsumerState<ProfileTab> {
-  String _name = '';
-  String _phone = '+91';
-  DateTime _dob = DateTime(2000, 5, 24);
-  String _imagePath = '';
-  String _bio = 'Looking for a meaningful connection';
+  String _localImagePath = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(profileControllerProvider.notifier).loadProfile();
+    });
+  }
+
+  String get _name {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile != null && profile.name.isNotEmpty) return profile.name;
+    final storage = ref.watch(storageServiceProvider);
+    return storage.getUserName() ?? 'User';
+  }
+
+  String get _phone {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile != null &&
+        profile.phoneNumber != null &&
+        profile.phoneNumber!.isNotEmpty) {
+      return profile.phoneNumber!;
+    }
+    final storage = ref.watch(storageServiceProvider);
+    return storage.getPhone() ?? '+91';
+  }
+
+  DateTime get _dob {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile?.dateOfBirth != null) {
+      final parsed = DateTime.tryParse(profile!.dateOfBirth!);
+      if (parsed != null) return parsed;
+    }
+    return DateTime(2000, 5, 24);
+  }
+
+  String get _dobDisplay {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile?.dateOfBirthDisplay != null &&
+        profile!.dateOfBirthDisplay!.isNotEmpty) {
+      return profile.dateOfBirthDisplay!;
+    }
+    return '';
+  }
 
   int get _age {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile?.age != null && profile!.age! > 0) {
+      return profile.age!;
+    }
+    final dob = _dob;
     final now = DateTime.now();
-    int age = now.year - _dob.year;
-    if (now.month < _dob.month ||
-        (now.month == _dob.month && now.day < _dob.day)) {
+    int age = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) {
       age--;
     }
     return age;
+  }
+
+  String get _bio {
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile != null && profile.bio != null && profile.bio!.isNotEmpty) {
+      return profile.bio!;
+    }
+    return 'Looking for a meaningful connection';
+  }
+
+  String get _imagePath {
+    if (_localImagePath.isNotEmpty) return _localImagePath;
+    final profile = ref.watch(profileControllerProvider).data?.profile;
+    if (profile?.profilePicture != null &&
+        profile!.profilePicture!.isNotEmpty) {
+      return profile.profilePicture!;
+    }
+    return '';
+  }
+
+  set _imagePath(String value) {
+    _localImagePath = value;
+  }
+
+  bool get _isVerified {
+    final data = ref.watch(profileControllerProvider).data;
+    return data?.isVerified ?? data?.profile.isVerified ?? false;
   }
 
   void _openEditProfile() async {
@@ -52,12 +126,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
 
     if (updated != null && mounted) {
       setState(() {
-        _name = updated.name;
-        _phone = updated.phone;
-        _dob = updated.dob;
-        _imagePath = updated.imagePath;
-        _bio = updated.bio;
+        _localImagePath = updated.imagePath;
       });
+      ref.read(profileControllerProvider.notifier).refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile updated successfully!'),
@@ -79,7 +150,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
 
       if (pickedFile != null && mounted) {
         setState(() {
-          _imagePath = pickedFile.path;
+          _localImagePath = pickedFile.path;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -286,7 +357,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                     onTap: () {
                       Navigator.of(modalCtx).pop();
                       setState(() {
-                        _imagePath = '';
+                        _localImagePath = '';
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -307,19 +378,33 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   }
 
   Widget _buildAvatarImage(String path, double width, double height) {
-    if (path.isNotEmpty && !path.startsWith('assets/')) {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
+    if (path.isNotEmpty) {
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return Image.network(
+          path,
           width: width,
           height: height,
           fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildAvatarFallback(width, height),
         );
+      }
+      if (!path.startsWith('assets/')) {
+        final file = File(path);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+          );
+        }
       }
     }
 
-    // Modern Stylized Profile Avatar
+    return _buildAvatarFallback(width, height);
+  }
+
+  Widget _buildAvatarFallback(double width, double height) {
     return Container(
       width: width,
       height: height,
@@ -332,10 +417,13 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         ),
       ),
       child: Center(
-        child: Icon(
-          Icons.person_rounded,
-          size: width * 0.58,
-          color: AppColors.primary,
+        child: Text(
+          _name.isNotEmpty ? _name[0].toUpperCase() : 'U',
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: width * 0.45,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );
@@ -564,44 +652,63 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
+    final profileState = ref.watch(profileControllerProvider);
+    final profileData = profileState.data;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9FD),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: 32,
-          ),
-          children: [
-            // Header
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 16),
-              child: Text(
-                'Profile',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Chillax Variable',
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () =>
+              ref.read(profileControllerProvider.notifier).refresh(),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 32,
+            ),
+            children: [
+              if (profileState.isLoading && profileData == null)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: LinearProgressIndicator(
+                    minHeight: 2.5,
+                    color: AppColors.primary,
+                    backgroundColor: Color(0xFFEDE9FE),
+                  ),
+                ),
+
+              // Header
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 16),
+                child: Text(
+                  'Profile',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Chillax Variable',
+                  ),
                 ),
               ),
-            ),
 
-            // Card 1: Top Hero Profile Card
-            _buildProfileHeroCard(context),
+              // Card 1: Top Hero Profile Card
+              _buildProfileHeroCard(context),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Card 2: Personal Info Card
-            _buildPersonalInfoCard(),
+              // Card 2: Personal Info Card
+              _buildPersonalInfoCard(),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Card 3: Action Menu List Card
-            _buildActionMenuCard(context),
-          ],
+              // Card 3: Action Menu List Card
+              _buildActionMenuCard(context),
+            ],
+          ),
         ),
       ),
     );
@@ -753,63 +860,72 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.verified_user_outlined,
-                      color: Color(0xFF8B5CF6),
-                      size: 13,
-                    ),
-                    SizedBox(width: 5),
-                    Text(
-                      'Verified Member',
-                      style: TextStyle(
+              if (_isVerified) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.verified_user_outlined,
                         color: Color(0xFF8B5CF6),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        size: 13,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(
-                      Icons.monetization_on,
-                      color: Color(0xFFF59E0B),
-                      size: 14,
-                    ),
-                    SizedBox(width: 5),
-                    Text(
-                      '1,250 Coins',
-                      style: TextStyle(
-                        color: Color(0xFF8B5CF6),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                      SizedBox(width: 5),
+                      Text(
+                        'Verified Member',
+                        style: TextStyle(
+                          color: Color(0xFF8B5CF6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              GestureDetector(
+                onTap: () {
+                  if (widget.onNavigateToWallet != null) {
+                    widget.onNavigateToWallet!();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.monetization_on,
+                        color: Color(0xFFF59E0B),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${ref.watch(profileControllerProvider).data?.coins ?? 0} Coins',
+                        style: const TextStyle(
+                          color: Color(0xFF8B5CF6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -893,24 +1009,25 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3.5,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Verified',
-                  style: TextStyle(
-                    color: Color(0xFF8B5CF6),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+              if (_isVerified)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Verified',
+                    style: TextStyle(
+                      color: Color(0xFF8B5CF6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -928,6 +1045,11 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
 
           // Row 3: Phone Number
           _buildInfoRow('Phone Number', _phone),
+
+          if (_dobDisplay.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildInfoRow('Date of Birth', _dobDisplay),
+          ],
         ],
       ),
     );
@@ -998,7 +1120,13 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             iconColor: const Color(0xFF6366F1),
             iconBg: const Color(0xFFEEF2FF),
             title: 'Transaction History',
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const TransactionHistoryScreen(),
+                ),
+              );
+            },
           ),
           _buildDivider(),
           _buildMenuItem(
@@ -1006,7 +1134,13 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             iconColor: const Color(0xFF8B5CF6),
             iconBg: const Color(0xFFF5F3FF),
             title: 'Notifications',
-            showNotificationDot: true,
+            showNotificationDot:
+                (ref
+                        .watch(profileControllerProvider)
+                        .data
+                        ?.unreadNotifications ??
+                    0) >
+                0,
             onTap: () {},
           ),
           _buildDivider(),

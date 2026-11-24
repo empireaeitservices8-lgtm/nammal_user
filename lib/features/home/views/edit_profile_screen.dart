@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/config/app_colors.dart';
+import '../controllers/profile_controller.dart';
 
 class UserProfileData {
   final String name;
@@ -37,22 +39,23 @@ class UserProfileData {
   }
 }
 
-class EditProfileScreen extends StatefulWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   final UserProfileData initialData;
 
   const EditProfileScreen({super.key, required this.initialData});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   late DateTime _selectedDob;
   late String _currentImagePath;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -197,19 +200,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildAvatarImage(String path, double width, double height) {
-    if (path.isNotEmpty && !path.startsWith('assets/')) {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
+    if (path.isNotEmpty) {
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return Image.network(
+          path,
           width: width,
           height: height,
           fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildAvatarFallback(width, height),
         );
+      }
+      if (!path.startsWith('assets/')) {
+        final file = File(path);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+          );
+        }
       }
     }
 
-    // Default Avatar
+    return _buildAvatarFallback(width, height);
+  }
+
+  Widget _buildAvatarFallback(double width, double height) {
     return Container(
       width: width,
       height: height,
@@ -374,17 +391,58 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
+    if (_isSaving) return;
     if (_formKey.currentState?.validate() ?? false) {
-      final updatedData = UserProfileData(
-        name: _nameController.text.trim(),
-        phone: widget.initialData.phone,
-        dob: _selectedDob,
-        imagePath: _currentImagePath,
-        bio: _bioController.text.trim(),
-      );
+      setState(() {
+        _isSaving = true;
+      });
 
-      Navigator.of(context).pop(updatedData);
+      final response = await ref
+          .read(profileControllerProvider.notifier)
+          .updateProfile(
+            name: _nameController.text.trim(),
+            bio: _bioController.text.trim(),
+            dob: _selectedDob,
+            imagePath: _currentImagePath,
+          );
+
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
+
+      if (response != null && response.isSuccess) {
+        Navigator.of(context).pop(
+          UserProfileData(
+            name: response.profile.name.isNotEmpty
+                ? response.profile.name
+                : widget.initialData.name,
+            phone: widget.initialData.phone,
+            dob: _selectedDob,
+            imagePath: _currentImagePath,
+            bio: response.profile.bio ?? _bioController.text.trim(),
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message),
+            backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        final err =
+            ref.read(profileControllerProvider).error ??
+            'Failed to update profile. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -772,24 +830,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(26),
-                      onTap: _saveChanges,
+                      onTap: _isSaving ? null : _saveChanges,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Save Changes',
-                            style: TextStyle(
+                        children: [
+                          if (_isSaving)
+                            const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          else ...[
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
                               color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                              size: 20,
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
