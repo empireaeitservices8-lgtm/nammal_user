@@ -1,5 +1,5 @@
 class ApiEndpoints {
-  // Replace with your real backend base URL or development IP
+  // RBase URL
   static const String baseUrl = 'https://nammaluser.pythonanywhere.com';
 
   // Request Timeouts

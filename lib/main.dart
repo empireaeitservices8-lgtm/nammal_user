@@ -1,6 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nammal_user/firebase_options.dart';
 import 'core/config/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/services/storage_service.dart';
@@ -10,11 +12,11 @@ void main() async {
   final storageService = StorageService();
   await storageService.init();
 
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(
     ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storageService),
-      ],
+      overrides: [storageServiceProvider.overrideWithValue(storageService)],
       child: const NammalUserApp(),
     ),
   );

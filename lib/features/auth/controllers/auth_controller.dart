@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nammal_user/core/services/notification_service.dart';
 import '../../../core/network/api_exceptions.dart';
 import '../../../core/services/storage_service.dart';
 import '../models/auth_models.dart';
@@ -108,9 +109,13 @@ class AuthController extends Notifier<AuthState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // Get FCM token to send with OTP verification
+      final fcmToken = await NotificationService().getFCMToken();
+
       final response = await _repository.verifyOtp(
         phoneNumber: phone,
         otp: otp,
+        fcmToken: fcmToken,
       );
       state = state.copyWith(
         isLoading: false,
@@ -138,7 +143,6 @@ class AuthController extends Notifier<AuthState> {
     required String day,
     required String month,
     required String year,
-    String? fcmToken,
   }) async {
     final phone = state.currentPhone ?? _storageService.getPhone() ?? '';
     if (phone.isEmpty) {
@@ -150,6 +154,9 @@ class AuthController extends Notifier<AuthState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // Get FCM token to send with registration
+      final fcmToken = await NotificationService().getFCMToken();
+
       final response = await _repository.register(
         RegisterUserRequest(
           phoneNumber: phone,
@@ -183,6 +190,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<LogoutResponse> logout() async {
     state = state.copyWith(isLoading: true);
+
+    // Delete FCM token so this device stops receiving notifications
+    await NotificationService().deleteFCMToken();
+
     final response = await _repository.logout();
     state = const AuthState();
     return response;
@@ -190,6 +201,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<DeleteAccountResponse> deleteAccount() async {
     state = state.copyWith(isLoading: true);
+
+    // Delete FCM token so this device stops receiving notifications
+    await NotificationService().deleteFCMToken();
+
     final response = await _repository.deleteAccount();
     state = const AuthState();
     return response;
